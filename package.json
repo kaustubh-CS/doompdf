@@ -1,0 +1,9 @@
+{
+  "name": "doompdf-static",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pre-built doompdf artefacts for Contentstack Launch",
+  "scripts": {
+    "build": "echo \"nothing to build – artefacts already committed\""
+  }
+}
