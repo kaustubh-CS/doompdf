@@ -3,6 +3,29 @@
 set -e
 set -x
 
+# --- 1. tool-chain -----------------------------------------------------------
+if ! command -v g++ >/dev/null 2>&1; then
+  apt-get update
+  apt-get install -y build-essential python3-dev wget
+fi
+
+# --- 2. python venv ----------------------------------------------------------
+if [ ! -d ".venv" ]; then
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+else
+  source .venv/bin/activate
+fi
+
+# --- 3. emsdk -----------------------------------------------------------------
+if [ ! -d "./emsdk" ]; then
+  git clone https://github.com/emscripten-core/emsdk.git --branch 1.39.20
+  ./emsdk/emsdk install 1.39.20
+  ./emsdk/emsdk activate 1.39.20
+fi
+
+
 if [ ! -d "./emsdk" ]; then
   git clone https://github.com/emscripten-core/emsdk.git --branch 1.39.20
   ./emsdk/emsdk install 1.39.20
