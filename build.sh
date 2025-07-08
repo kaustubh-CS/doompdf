@@ -1,54 +1,37 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 set -e
 set -x
 
-# --- 1. tool-chain -----------------------------------------------------------
-if ! command -v g++ >/dev/null 2>&1; then
-  apt-get update
-  apt-get install -y build-essential python3-dev wget
-fi
+# --- 0. packages -------------------------------------------------------------
+apt-get update
+apt-get install -y build-essential python3-dev python3-venv wget
 
-# --- 2. python venv ----------------------------------------------------------
+# --- 1. python venv ----------------------------------------------------------
 if [ ! -d ".venv" ]; then
   python3 -m venv .venv
-  source .venv/bin/activate
-  pip install -r requirements.txt
-else
-  source .venv/bin/activate
 fi
+source .venv/bin/activate
+pip install -r requirements.txt
 
-# --- 3. emsdk -----------------------------------------------------------------
-if [ ! -d "./emsdk" ]; then
+# --- 2. emsdk ---------------------------------------------------------------
+if [ ! -d "emsdk" ]; then
   git clone https://github.com/emscripten-core/emsdk.git --branch 1.39.20
   ./emsdk/emsdk install 1.39.20
   ./emsdk/emsdk activate 1.39.20
 fi
+source ./emsdk/emsdk_env.sh >/dev/null
 
+# --- 3. build ---------------------------------------------------------------
+[ ! -f doomgeneric/doom1.wad ] && \
+  wget https://distro.ibiblio.org/slitaz/sources/packages/d/doom1.wad -O doomgeneric/doom1.wad
 
-if [ ! -d "./emsdk" ]; then
-  git clone https://github.com/emscripten-core/emsdk.git --branch 1.39.20
-  ./emsdk/emsdk install 1.39.20
-  ./emsdk/emsdk activate 1.39.20
-fi
-
-source ./emsdk/emsdk_env.sh >/dev/null 2>&1
-source ./.venv/bin/activate >/dev/null 2>&1
-
-if [ ! -f "doomgeneric/doom1.wad" ]; then
-  wget "https://distro.ibiblio.org/slitaz/sources/packages/d/doom1.wad" -O "doomgeneric/doom1.wad"
-fi
-if [ "$1" = "clean" ]; then
-  emmake make -C doomgeneric -f Makefile.pdfjs clean
-fi
-emmake make -C doomgeneric -f Makefile.pdfjs -j$(nproc --all)
+[ "$1" = clean ] && emmake make -C doomgeneric -f Makefile.pdfjs clean
+emmake make -C doomgeneric -f Makefile.pdfjs -j"$(nproc)"
 
 mkdir -p out
 cp web/* out/
-
 python3 embed_file.py file_template.js doomgeneric/doom1.wad out/data.js
 cat pre.js out/data.js doomgeneric/doomgeneric.js > out/compiled.js
 cat pre.js file_template.js doomgeneric/doomgeneric.js > out/compiled_nowad.js
-
 python3 generate.py out/compiled.js out/doom.pdf
 python3 generate.py out/compiled_nowad.js out/doom_nowad.pdf
